@@ -1,4 +1,7 @@
-node_modules
-logs
+node_modules/
+logs/
 .DS_Store
 .env*
+*.env
+.env.local
+.env.uat
