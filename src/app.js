@@ -1,10 +1,9 @@
 import express from "express";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 
 import config from "./configs.js";
 import { connectDB } from "./database.js";
-import authRoutes from "./auth/auth.route.js";
+import indexRoute from "./index.routes.js"
 
 dotenv.config();
 
@@ -16,7 +15,7 @@ app.use(express.json());
 
 connectDB();
 
-app.use("/api/auth", authRoutes);
+app.use("/api/raisara", indexRoute);
 
 
 app.listen(port, () => {
