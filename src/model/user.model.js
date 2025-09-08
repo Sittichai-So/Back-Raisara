@@ -15,11 +15,6 @@ const userSchema = new Schema({
         required: true,
         trim: true
     },
-    passwordHash: {
-        type: String,
-        required: false,
-        trim: true
-    },
     email: {
         type: String,
         required: true,
@@ -33,12 +28,12 @@ const userSchema = new Schema({
         required: true,
         trim: true
     },
-    firstname: {
+    firstName: {
         type: String,
         required: true,
         trim: true
     },
-    lastname: {
+    lastName: {
         type: String,
         required: true,
         trim: true
@@ -113,6 +108,6 @@ userSchema.pre('save', function(next) {
     next();
 });
 
-const User = model('User', userSchema);
+const User = model('User', userSchema, 'users');
 
 export default User;
