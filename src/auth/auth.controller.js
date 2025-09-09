@@ -6,7 +6,7 @@ import md5 from "md5";
 export const register = async (req, res) => {
   try {
     const { username, password, email, firstName, lastName, phoneNumber } = req.body;
-    
+
     if (!username || !password || !email || !firstName || !lastName || !phoneNumber) {
       return res.status(400).json({
         status: "fail",
@@ -27,10 +27,15 @@ export const register = async (req, res) => {
       });
     }
 
-    const user = await new authService().register(req.body);
-    
+    const userPayload = {
+      ...req.body,
+      displayName: firstName,
+    };
+
+    const user = await new authService().register(userPayload);
+
     const { password: _, passwordHash: __, ...safeUser } = user.toObject ? user.toObject() : user;
-    
+
     return res.status(201).json({
       status: "success",
       code: 1,
@@ -40,10 +45,10 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    
+
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
-      const fieldName = field === 'username' ? 'ชื่อผู้ใช้' : 'อีเมล';
+      const fieldName = field === "username" ? "ชื่อผู้ใช้" : "อีเมล";
       return res.status(400).json({
         status: "fail",
         code: 0,
@@ -62,6 +67,7 @@ export const register = async (req, res) => {
     });
   }
 };
+
 
 export const login = async (req, res) => {
   try {
@@ -114,5 +120,23 @@ export const login = async (req, res) => {
       cause: "internal_error",
       result: null,
     });
+  }
+};
+
+export const checkUsername = async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) return res.status(400).json({ available: false, message: "กรุณาระบุ username" });
+
+    const service = new authService();
+    const existingUser = await service.findUserByUsername(username);
+
+    return res.status(200).json({
+      available: !existingUser,
+      username
+    });
+  } catch (err) {
+    return res.status(500).json({ available: false, username: "", message: err.message });
   }
 };
