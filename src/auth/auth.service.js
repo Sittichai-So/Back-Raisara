@@ -22,11 +22,11 @@ export default class authService {
       return savedUser;
     } catch (error) {
       console.log(error);
-      throw new Error(error.message || "Registration failed", {
-        cause: error.cause || "registration_error",
-      });
+      error.cause = error.cause || "registration_error";
+      throw error;
     }
   }
+
 
   async login(username, password) {
     try {

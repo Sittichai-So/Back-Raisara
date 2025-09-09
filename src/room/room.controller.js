@@ -1,9 +1,9 @@
-import userService from "./user.service.js";
+import roomService from "./room.service.js";
 
-export const getUsersContrller = async (req, res, next) => {
+export const getRoom = async (req, res, next) => {
   try {
 
-    const response = await  new userService().getUsersService()
+    const response = await  new roomService().getAll()
 
     return res.status(200).send({
       status: "success",

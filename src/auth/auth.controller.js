@@ -46,9 +46,15 @@ export const register = async (req, res) => {
   } catch (error) {
     console.log(error);
 
-    if (error.code === 11000) {
+    const fieldLabels = {
+      username: "ชื่อผู้ใช้",
+      email: "อีเมล",
+      phoneNumber: "เบอร์โทรศัพท์",
+    };
+
+    if (error.code === 11000 || error.name === "MongoServerError") {
       const field = Object.keys(error.keyValue)[0];
-      const fieldName = field === "username" ? "ชื่อผู้ใช้" : "อีเมล";
+      const fieldName = fieldLabels[field] || field;
       return res.status(400).json({
         status: "fail",
         code: 0,
@@ -56,7 +62,7 @@ export const register = async (req, res) => {
         cause: "duplicate_key",
         result: null,
       });
-    }
+}
 
     return res.status(500).json({
       status: "fail",

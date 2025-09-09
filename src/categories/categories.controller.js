@@ -1,16 +1,16 @@
-import userService from "./user.service.js";
+import CategoryService from "./categories.service.js";
 
-export const getUsersContrller = async (req, res, next) => {
+const categoryService = new CategoryService();
+
+export const getCategories = async (req, res) => {
   try {
-
-    const response = await  new userService().getUsersService()
-
-    return res.status(200).send({
+    const categories = await categoryService.getAll();
+  return res.status(200).send({
       status: "success",
       code: 1,
       message: "ดึงข้อมูลสำเร็จ",
       cause: "",
-      result: response.length === 0 ? "ไม่มีข้อมูล" : response
+      result: categories.length === 0 ? "ไม่มีข้อมูล" : categories
     });
 
   } catch (error) {
