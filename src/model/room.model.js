@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
 const { Schema, model } = mongoose;
 
@@ -6,7 +6,16 @@ const roomSchema = new Schema({
   name: { type: String, required: true },
   category: { type: String, required: true },
   description: { type: String, default: '' },
-  members: { type: Number, default: 0 },
+  members: {
+    type: [
+      {
+        userId: { type: String, required: true },
+        fullname: { type: String, default: '' },
+        avatar: { type: String, default: '' }
+      }
+    ],
+    default: []
+  },
   messages: { type: Number, default: 0 },
   status: { type: String, default: 'ออนไลน์' },
   tags: { type: [String], default: [] },
@@ -16,11 +25,8 @@ const roomSchema = new Schema({
   iconGradient: { type: String, default: '' },
   online: { type: Boolean, default: false },
   featured: { type: Boolean, default: false },
-  badge: { type: String, default: '' },
   isFavorite: { type: Boolean, default: false }
 }, { timestamps: true });
 
-
 const Room = model('Room', roomSchema, 'room');
-
 export default Room;
