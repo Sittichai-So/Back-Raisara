@@ -16,6 +16,12 @@ const roomSchema = new Schema({
     ],
     default: []
   },
+  lastMessage: {
+    content: { type: String, default: '' },
+    userId: { type: String, default: '' },
+    createdAt: { type: Date, default: Date.now }
+  },
+  messageCount: { type: Number, default: 0 },
   messages: { type: Number, default: 0 },
   status: { type: String, default: 'ออนไลน์' },
   tags: { type: [String], default: [] },

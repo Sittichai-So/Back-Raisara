@@ -2,6 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from 'cors'
 
+import { createServer } from 'http';
+import { setupSocketIO } from './socket/index.js';
+
 import config from "./configs.js";
 import { connectDB } from "./database.js";
 import indexRoute from "./index.routes.js"
@@ -15,6 +18,12 @@ const port = config.app.port;
 
 app.use(express.json());
 
+const server = createServer(app);
+const io = setupSocketIO(server);
+
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
 
 connectDB();
 

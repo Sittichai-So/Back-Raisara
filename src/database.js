@@ -11,6 +11,9 @@ export const connectDB = async () => {
         username: config.db.mongo.username,
         password: config.db.mongo.password,
       },
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false,
       authSource: "admin",
       dbName: config.db.mongo.database,
     });
