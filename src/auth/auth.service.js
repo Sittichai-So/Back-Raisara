@@ -46,6 +46,7 @@ export default class authService {
           role: user.role,
           fullname: user.firstName + " " + user.lastName,
           phoneNumber: user.phoneNumber,
+          status: "online"
         },
         cause: "Successfully logged in",
       };

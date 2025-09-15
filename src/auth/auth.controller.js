@@ -116,6 +116,7 @@ export const login = async (req, res) => {
         role: user.role,
         fullname: user.fullname,
         phoneNumber: user.phoneNumber,
+        status: "online"
       },
     });
   } catch (error) {

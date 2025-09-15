@@ -1,5 +1,4 @@
 import ChatService from "./chat.service.js";
-import { uploadFile } from "../utils/fileUpload.js";
 
 const chatService = new ChatService();
 
@@ -8,20 +7,24 @@ export const getMessages = async (req, res) => {
     const { roomId } = req.params;
     const { offset = 0, limit = 50 } = req.query;
 
-    const messages = await chatService.getMessages(roomId, parseInt(offset), parseInt(limit));
+    const messages = await chatService.getMessages(
+      roomId,
+      parseInt(offset),
+      parseInt(limit)
+    );
 
     return res.status(200).json({
       status: "success",
       code: 1,
       message: "ดึงข้อความสำเร็จ",
-      result: messages
+      result: messages,
     });
   } catch (error) {
     return res.status(500).json({
       status: "fail",
       code: 0,
       message: error.message,
-      result: null
+      result: null,
     });
   }
 };
@@ -30,19 +33,7 @@ export const sendMessage = async (req, res) => {
   try {
     const { roomId } = req.params;
     const { content, type, replyTo } = req.body;
-    const user = req.user; // From auth middleware
-
-    // Handle file upload if present
-    let fileData = {};
-    if (req.file) {
-      const uploadResult = await uploadFile(req.file);
-      fileData = {
-        fileUrl: uploadResult.url,
-        fileName: req.file.originalname,
-        fileSize: req.file.size,
-        fileMimeType: req.file.mimetype
-      };
-    }
+    const user = req.user; // ต้องมาจาก middleware auth
 
     const messageData = {
       roomId,
@@ -50,14 +41,13 @@ export const sendMessage = async (req, res) => {
       username: user.fullname,
       avatar: user.avatar,
       content,
-      type: type || 'text',
+      type: type || "text",
       replyTo,
-      ...fileData,
       metadata: {
         ipAddress: req.ip,
-        userAgent: req.get('User-Agent'),
-        platform: req.get('X-Platform') || 'web'
-      }
+        userAgent: req.get("User-Agent"),
+        platform: req.get("X-Platform") || "web",
+      },
     };
 
     const message = await chatService.sendMessage(messageData);
@@ -66,14 +56,14 @@ export const sendMessage = async (req, res) => {
       status: "success",
       code: 1,
       message: "ส่งข้อความสำเร็จ",
-      result: message
+      result: message,
     });
   } catch (error) {
     return res.status(500).json({
       status: "fail",
       code: 0,
       message: error.message,
-      result: null
+      result: null,
     });
   }
 };
@@ -84,20 +74,24 @@ export const updateMessage = async (req, res) => {
     const { content } = req.body;
     const user = req.user;
 
-    const message = await chatService.updateMessage(messageId, user._id, content);
+    const message = await chatService.updateMessage(
+      messageId,
+      user._id,
+      content
+    );
 
     return res.status(200).json({
       status: "success",
       code: 1,
       message: "แก้ไขข้อความสำเร็จ",
-      result: message
+      result: message,
     });
   } catch (error) {
     return res.status(500).json({
       status: "fail",
       code: 0,
       message: error.message,
-      result: null
+      result: null,
     });
   }
 };
@@ -113,61 +107,14 @@ export const deleteMessage = async (req, res) => {
       status: "success",
       code: 1,
       message: "ลบข้อความสำเร็จ",
-      result: null
+      result: null,
     });
   } catch (error) {
     return res.status(500).json({
       status: "fail",
       code: 0,
       message: error.message,
-      result: null
-    });
-  }
-};
-
-export const toggleReaction = async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const { emoji } = req.body;
-    const user = req.user;
-
-    const message = await chatService.toggleReaction(messageId, user._id, user.fullname, emoji);
-
-    return res.status(200).json({
-      status: "success",
-      code: 1,
-      message: "อัพเดทรีแอคชันสำเร็จ",
-      result: message
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: "fail",
-      code: 0,
-      message: error.message,
-      result: null
-    });
-  }
-};
-
-export const markAsRead = async (req, res) => {
-  try {
-    const { roomId } = req.params;
-    const user = req.user;
-
-    const result = await chatService.markMessagesAsRead(roomId, user._id);
-
-    return res.status(200).json({
-      status: "success",
-      code: 1,
-      message: "อ่านข้อความแล้ว",
-      result
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: "fail",
-      code: 0,
-      message: error.message,
-      result: null
+      result: null,
     });
   }
 };
@@ -182,7 +129,7 @@ export const searchMessages = async (req, res) => {
         status: "fail",
         code: 0,
         message: "คำค้นหาต้องมีอย่างน้อย 2 ตัวอักษร",
-        result: null
+        result: null,
       });
     }
 
@@ -192,14 +139,45 @@ export const searchMessages = async (req, res) => {
       status: "success",
       code: 1,
       message: "ค้นหาข้อความสำเร็จ",
-      result: messages
+      result: messages,
     });
   } catch (error) {
     return res.status(500).json({
       status: "fail",
       code: 0,
       message: error.message,
-      result: null
+      result: null,
+    });
+  }
+};
+
+export const getRoomById = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    const room = await chatService.getRoomById(roomId);
+
+    if (!room) {
+      return res.status(404).json({
+        status: "fail",
+        code: 0,
+        message: "ไม่พบห้องที่ระบุ",
+        result: null,
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      code: 1,
+      message: "ดึงข้อมูลห้องสำเร็จ",
+      result: room,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "fail",
+      code: 0,
+      message: error.message,
+      result: null,
     });
   }
 };

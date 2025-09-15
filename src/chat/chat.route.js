@@ -1,30 +1,18 @@
-import express from 'express';
-import {
-  getMessages,
-  sendMessage,
-  updateMessage,
-  deleteMessage,
-  toggleReaction,
-  markAsRead,
-  searchMessages
-} from '../controllers/chat.controller.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { upload } from '../middleware/upload.js';
+import { Router } from "express";
+import * as ChatController from "./chat.controller.js";
 
-const router = express.Router();
+const router = Router();
 
-router.use(authenticateToken);
+router.get("/:roomId/messages", ChatController.getMessages);
 
-router.get('/:roomId/messages', getMessages);
-router.post('/:roomId/messages', upload.single('file'), sendMessage);
-router.put('/messages/:messageId', updateMessage);
-router.delete('/messages/:messageId', deleteMessage);
+router.post("/:roomId/messages", ChatController.sendMessage);
 
+router.put("/messages/:messageId", ChatController.updateMessage);
 
-router.post('/messages/:messageId/reactions', toggleReaction);
+router.delete("/messages/:messageId", ChatController.deleteMessage);
 
-router.post('/:roomId/read', markAsRead);
+router.get("/:roomId/search", ChatController.searchMessages);
 
-router.get('/:roomId/search', searchMessages);
+router.get("/room/:roomId", ChatController.getRoomById);
 
 export default router;
