@@ -23,7 +23,7 @@ export default class userService {
       });
     }
   }
-    async changePasswordByIDSerivce(id, payload) {
+  async changePasswordByIDSerivce(id, payload) {
     try {
       console.log(id);
       console.log(payload);
@@ -49,6 +49,28 @@ export default class userService {
     } catch (error) {
       throw new Error(error, {
         cause: `ไม่สามารถเเก้ไขข้อมูลได้!`,
+      });
+    }
+  }
+
+  async updateStatusService(id, status) {
+    try {
+      const user = await User.findById(id);
+      if (!user) {
+        throw new Error("User not found!");
+      }
+
+      user.status = status;
+      const updatedUser = await user.save();
+
+      return {
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        status: updatedUser.status,
+      };
+    } catch (error) {
+      throw new Error(error, {
+        cause: `ไม่สามารถอัปเดตสถานะได้!`,
       });
     }
   }

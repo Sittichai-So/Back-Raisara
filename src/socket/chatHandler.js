@@ -1,123 +1,95 @@
-export default function setupChatHandlers(io, socket) {
-  socket.on('join_room', async (data) => {
+import Room from "../model/room.model.js";
+import User from "../model/user.model.js";
+
+const rooms = {};
+
+const getMemberPayload = (m) => {
+  const user = m.userId;
+  return {
+    _id: user._id,
+    fullname: user.fullname || user.displayName || user.username || 'Unknown User',
+    avatar: user.avatar || null,
+    status: user.status || 'offline',
+    lastSeen: user.lastSeen || null,
+    joinedAt: m.joinedAt || null
+  };
+};
+
+export default function chatHandler(io, socket) {
+  socket.on("joinRoom", async ({ roomId, user }) => {
     try {
-      const { roomId, userId, username, avatar } = data;
+      socket.userId = user._id;
+      socket.join(roomId);
 
-      await socket.join(roomId);
+      await User.findByIdAndUpdate(user._id, { status: 'online' });
 
-      socket.roomId = roomId;
-      socket.userId = userId;
-      socket.username = username;
-      
-      socket.to(roomId).emit('user_joined', {
-        userId,
-        username,
-        avatar,
-        joinedAt: new Date()
-      });
-      
-      const socketsInRoom = await io.in(roomId).fetchSockets();
-      const onlineUsers = socketsInRoom.map(s => ({
-        userId: s.userId,
-        username: s.username,
-        socketId: s.id
-      }));
-      
-      socket.emit('online_users', onlineUsers);
-      
-    } catch (error) {
-      socket.emit('error', { message: 'Failed to join room' });
+      let room = await Room.findById(roomId);
+      if (!room) return;
+
+      const exists = room.members.some(m => String(m.userId) === String(user._id));
+      if (!exists) {
+        room.members.push({ userId: user._id, joinedAt: new Date() });
+        await room.save();
+      }
+
+      if (!rooms[roomId]) rooms[roomId] = [];
+      if (!rooms[roomId].some(u => u._id === user._id)) {
+        rooms[roomId].push(user);
+      }
+
+      const populatedRoom = await Room.findById(roomId)
+        .populate("members.userId", "fullname displayName username avatar status lastSeen");
+
+      io.to(roomId).emit("roomMembers", populatedRoom.members.map(getMemberPayload));
+
+    } catch (err) {
+      console.error("joinRoom error:", err);
     }
   });
 
-  socket.on('leave_room', async (data) => {
-    try {
-      const { roomId, userId } = data;
-      
-      await socket.leave(roomId);
-      
-      socket.to(roomId).emit('user_left', userId);
-      
-    } catch (error) {
-      socket.emit('error', { message: 'Failed to leave room' });
+socket.on("statusChanged", async ({ roomId, userId, status }) => {
+  try {
+
+    await User.findByIdAndUpdate(userId, {
+      status: status || 'offline',
+      lastSeen: new Date()
+    })
+
+    if (roomId && rooms[roomId]) {
+      const member = rooms[roomId].find(m => m._id === userId)
+      if (member) member.status = status || 'offline'
+      io.to(roomId).emit("roomMembers", rooms[roomId])
     }
-  });
+  } catch (err) {
+    console.error("statusChanged error:", err)
+  }
+})
 
-  socket.on('send_message', async (messageData) => {
-    try {
-      const chatService = new (await import('../services/chat.service.js')).default();
-      
-      const fullMessageData = {
-        ...messageData,
-        userId: socket.userId,
-        username: socket.username,
-        metadata: {
-          socketId: socket.id,
-          timestamp: new Date()
-        }
-      };
-      
-      const savedMessage = await chatService.sendMessage(fullMessageData);
-      
-      io.to(messageData.roomId).emit('new_message', savedMessage);
-      
-    } catch (error) {
-      socket.emit('message_error', { 
-        error: error.message,
-        originalData: messageData 
-      });
+socket.on("disconnect", async () => {
+  try {
+    for (const roomId in rooms) {
+      rooms[roomId] = rooms[roomId].filter(u => u._id !== socket.userId)
+      await User.findByIdAndUpdate(socket.userId, {
+        status: "offline",
+        lastSeen: new Date()
+      })
+      io.to(roomId).emit("roomMembers", rooms[roomId])
     }
-  });
+  } catch (err) {
+    console.error("disconnect error:", err)
+  }
+})
 
-  socket.on('typing_start', (data) => {
-    const { roomId } = data;
-    socket.to(roomId).emit('user_typing', {
-      userId: socket.userId,
-      username: socket.username
-    });
-  });
-
-  socket.on('typing_stop', (data) => {
-    const { roomId } = data;
-    socket.to(roomId).emit('user_stop_typing', socket.userId);
-  });
-
-  socket.on('toggle_reaction', async (data) => {
-    try {
-      const { messageId, emoji } = data;
-      const chatService = new (await import('../services/chat.service.js')).default();
-      
-      const message = await chatService.toggleReaction(
-        messageId, 
-        socket.userId, 
-        socket.username, 
-        emoji
-      );
-      
-      io.to(socket.roomId).emit('message_updated', message);
-      
-    } catch (error) {
-      socket.emit('reaction_error', { error: error.message });
-    }
-  });
-
-  socket.on('delete_message', async (data) => {
-    try {
-      const { messageId, roomId } = data;
-      const chatService = new (await import('../services/chat.service.js')).default();
-      
-      await chatService.deleteMessage(messageId, socket.userId);
-      
-      io.to(roomId).emit('message_deleted', messageId);
-      
-    } catch (error) {
-      socket.emit('delete_error', { error: error.message });
-    }
-  });
-
-  socket.on('disconnect', () => {
-    if (socket.roomId && socket.userId) {
-      socket.to(socket.roomId).emit('user_left', socket.userId);
-    }
+  socket.on("sendMessage", ({ roomId, message, user, files, replyTo }) => {
+    const msgData = {
+      _id: Date.now().toString(),
+      user,
+      message,
+      files: files || [],
+      type: "text",
+      replyTo: replyTo || null,
+      createdAt: new Date().toISOString()
+    };
+    io.to(roomId).emit("receiveMessage", msgData);
   });
 }

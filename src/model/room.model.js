@@ -9,9 +9,8 @@ const roomSchema = new Schema({
   members: {
     type: [
       {
-        userId: { type: String, required: true },
-        fullname: { type: String, default: '' },
-        avatar: { type: String, default: '' }
+        userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        joinedAt: { type: Date, default: Date.now }
       }
     ],
     default: []

@@ -134,7 +134,6 @@ export default class ChatService {
     }
   }
 
-  // Get message statistics
   async getMessageStats(roomId) {
     try {
       const stats = await Message.aggregate([
@@ -170,4 +169,39 @@ export default class ChatService {
       throw new Error(`Failed to get message stats: ${error.message}`);
     }
   }
+
+async getRoomMembers(roomId) {
+  try {
+    const room = await Room.findById(roomId)
+      .populate("members.userId", "username displayName firstName lastName avatar status lastLogin");
+
+    if (!room) throw new Error("Room not found");
+
+    return {
+      _id: room._id,
+      name: room.name,
+      members: room.members.map(m => {
+        const user = m.userId;
+        if (!user) return { userId: null, fullname: 'Unknown User', status: 'offline' };
+
+        const fullname = user.displayName || 
+                         [user.firstName, user.lastName].filter(Boolean).join(' ') || 
+                         user.username || 
+                         'Unknown User';
+        return {
+          userId: user._id,
+          fullname,
+          avatar: user.avatar,
+          status: user.status || "offline",
+          lastSeen: user.lastLogin || null,
+          joinedAt: m.joinedAt
+        };
+      })
+    };
+  } catch (error) {
+    console.error(`Failed to get room members for roomId=${roomId}:`, error);
+    throw new Error(`Failed to get room members: ${error.message}`);
+  }
+}
+
 }

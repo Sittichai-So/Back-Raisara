@@ -1,9 +1,11 @@
-import userService from "./user.service.js";
+import UserService from "./users.service.js";
+
+const userService = new UserService();
 
 export const getUsersContrller = async (req, res, next) => {
   try {
 
-    const response = await  new userService().getUsersService()
+    const response = await userService.getUsersService()
 
     return res.status(200).send({
       status: "success",
@@ -21,6 +23,25 @@ export const getUsersContrller = async (req, res, next) => {
       message: error.message,
       cause: error.cause,
       result: null,
+    });
+  }
+};
+
+export const updateStatusController = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { status } = req.body;
+
+    const updated = await userService.updateStatusService(id, status);
+    res.json({
+      success: true,
+      message: "อัปเดตสถานะสำเร็จ",
+      result: updated,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "เกิดข้อผิดพลาด",
     });
   }
 };

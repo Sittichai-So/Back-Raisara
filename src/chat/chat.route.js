@@ -15,4 +15,6 @@ router.get("/:roomId/search", ChatController.searchMessages);
 
 router.get("/room/:roomId", ChatController.getRoomById);
 
+router.get("/:roomId/members", ChatController.getRoomMembers);
+
 export default router;

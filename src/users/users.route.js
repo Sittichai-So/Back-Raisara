@@ -1,11 +1,9 @@
-import { Router  } from "express";
-import * as userRepository  from "./user.controller.js"
-import { validatePermission } from "../middleware.js";
+import { Router } from "express"
+import * as userController from "./users.controller.js"
 
 const router = Router()
 
-router.post("/changepassword",userRepository .changePasswordByIDContrller)
-router.get("/",validatePermission,userRepository .getUsersContrller)
-router.post("/getByID",validatePermission,userRepository .getUserByIDContrller)
+router.get("/", userController.getUsersContrller)
+router.patch("/:id/status", userController.updateStatusController)
 
-export default router;
+export default router

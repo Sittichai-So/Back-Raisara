@@ -33,7 +33,7 @@ export const sendMessage = async (req, res) => {
   try {
     const { roomId } = req.params;
     const { content, type, replyTo } = req.body;
-    const user = req.user; // ต้องมาจาก middleware auth
+    const user = req.user;
 
     const messageData = {
       roomId,
@@ -150,6 +150,38 @@ export const searchMessages = async (req, res) => {
     });
   }
 };
+
+export const getRoomMembers = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    const room = await chatService.getRoomMembers(roomId);
+
+    if (!room) {
+      return res.status(404).json({
+        status: "fail",
+        code: 0,
+        message: "ไม่พบห้องที่ระบุ",
+        result: null,
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      code: 1,
+      message: "ดึงสมาชิกในห้องสำเร็จ",
+      result: room.members,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "fail",
+      code: 0,
+      message: error.message,
+      result: null,
+    });
+  }
+};
+
 
 export const getRoomById = async (req, res) => {
   try {

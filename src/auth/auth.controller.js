@@ -62,7 +62,7 @@ export const register = async (req, res) => {
         cause: "duplicate_key",
         result: null,
       });
-}
+    }
 
     return res.status(500).json({
       status: "fail",
@@ -74,59 +74,64 @@ export const register = async (req, res) => {
   }
 };
 
-
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-
+    const { username, password } = req.body
     if (!username || !password) {
       return res.status(400).json({
         status: "fail",
         message: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน",
         cause: "missing_credentials",
         result: null,
-      });
+      })
     }
-    const passwordHash = md5(password);
-    const service = new authService();
-    const { user, cause } = await service.login(username, passwordHash);
 
-
-    console.log('user', user)
+    const passwordHash = md5(password)
+    const service = new authService()
+    const { user, cause } = await service.login(username, passwordHash)
 
     if (!user) {
       return res.status(401).json({
         status: "fail",
         message: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
         cause: cause || "invalid_credentials",
-        result: user,
-      });
+        result: null,
+      })
     }
 
-    user.status = "online";
-    user.lastLogin = new Date();
+    const updatedUser = await service.updateUserStatus(user._id, 'online')
+
+    const token = jwt.sign(
+      { id: updatedUser._id, username: updatedUser.username, role: updatedUser.role },
+      config.JWT_SECRET || "your-secret-key",
+      { expiresIn: "24h" }
+    )
+
+    const userData = {
+      _id: updatedUser._id,
+      username: updatedUser.username,
+      role: updatedUser.role,
+      fullname: updatedUser.firstName + " " + updatedUser.lastName,
+      phoneNumber: updatedUser.phoneNumber,
+      status: updatedUser.status,
+      lastLogin: updatedUser.lastLogin,
+      token: token
+    }
 
     return res.status(200).json({
       status: "success",
       message: "เข้าสู่ระบบสำเร็จ",
       cause: "Successfully logged in",
-      result: {
-        _id: user._id,
-        username: user.username,
-        role: user.role,
-        fullname: user.fullname,
-        phoneNumber: user.phoneNumber,
-        status: "online"
-      },
-    });
+      result: userData,
+    })
+
   } catch (error) {
-    console.error(error);
     return res.status(500).json({
       status: "fail",
       message: error.message || "เกิดข้อผิดพลาดภายในระบบ",
       cause: "internal_error",
       result: null,
-    });
+    })
   }
 };
 
