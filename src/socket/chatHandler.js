@@ -1,5 +1,6 @@
 import Room from "../model/room.model.js";
 import User from "../model/user.model.js";
+import chatLogService from "../chatLog/chatLog.service.js";
 
 const rooms = {};
 
@@ -16,6 +17,7 @@ const getMemberPayload = (m) => {
 };
 
 export default function chatHandler(io, socket) {
+  // Join room
   socket.on("joinRoom", async ({ roomId, user }) => {
     try {
       socket.userId = user._id;
@@ -47,49 +49,67 @@ export default function chatHandler(io, socket) {
     }
   });
 
-socket.on("statusChanged", async ({ roomId, userId, status }) => {
-  try {
-
-    await User.findByIdAndUpdate(userId, {
-      status: status || 'offline',
-      lastSeen: new Date()
-    })
-
-    if (roomId && rooms[roomId]) {
-      const member = rooms[roomId].find(m => m._id === userId)
-      if (member) member.status = status || 'offline'
-      io.to(roomId).emit("roomMembers", rooms[roomId])
-    }
-  } catch (err) {
-    console.error("statusChanged error:", err)
-  }
-})
-
-socket.on("disconnect", async () => {
-  try {
-    for (const roomId in rooms) {
-      rooms[roomId] = rooms[roomId].filter(u => u._id !== socket.userId)
-      await User.findByIdAndUpdate(socket.userId, {
-        status: "offline",
+  // Status changed
+  socket.on("statusChanged", async ({ roomId, userId, status }) => {
+    try {
+      await User.findByIdAndUpdate(userId, {
+        status: status || 'offline',
         lastSeen: new Date()
-      })
-      io.to(roomId).emit("roomMembers", rooms[roomId])
-    }
-  } catch (err) {
-    console.error("disconnect error:", err)
-  }
-})
+      });
 
-  socket.on("sendMessage", ({ roomId, message, user, files, replyTo }) => {
-    const msgData = {
-      _id: Date.now().toString(),
-      user,
-      message,
-      files: files || [],
-      type: "text",
-      replyTo: replyTo || null,
-      createdAt: new Date().toISOString()
-    };
-    io.to(roomId).emit("receiveMessage", msgData);
+      if (roomId && rooms[roomId]) {
+        const member = rooms[roomId].find(m => m._id === userId)
+        if (member) member.status = status || 'offline';
+        io.to(roomId).emit("roomMembers", rooms[roomId]);
+      }
+    } catch (err) {
+      console.error("statusChanged error:", err);
+    }
   });
+
+  // Disconnect
+  socket.on("disconnect", async () => {
+    try {
+      for (const roomId in rooms) {
+        rooms[roomId] = rooms[roomId].filter(u => u._id !== socket.userId);
+        await User.findByIdAndUpdate(socket.userId, {
+          status: "offline",
+          lastSeen: new Date()
+        });
+        io.to(roomId).emit("roomMembers", rooms[roomId]);
+      }
+    } catch (err) {
+      console.error("disconnect error:", err);
+    }
+  });
+
+socket.on("sendMessage", async ({ roomId, message, user, replyTo }) => {
+  try {
+    const msgData = {
+      text: message,
+      userId: user._id,
+      username: user.username || user.fullname || user.displayName || 'Unknown',
+      timestamp: new Date(),
+      type: 'text',
+      replyTo: replyTo?._id || null
+    };
+
+    await chatLogService.addMessage(roomId, msgData);
+      io.to(roomId).emit("receiveMessage", {
+        _id: msgData._id || new Date().getTime().toString(),
+        content: msgData.text,
+        username: msgData.username,
+        fullName: `${user.firstName || user.username || user.displayName} ${user.lastName || ''}`.trim(),
+        avatar: user.avatar || null,
+        userId: String(user._id),
+        createdAt: msgData.timestamp,
+        type: msgData.type,
+        replyTo: msgData.replyTo
+      });
+  } catch (err) {
+    console.error("sendMessage error:", err);
+  }
+});
+
+
 }

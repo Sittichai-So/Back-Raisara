@@ -34,22 +34,6 @@ const messageSchema = new Schema({
     enum: ['text', 'image', 'file', 'voice', 'system'],
     default: 'text'
   },
-  fileUrl: {
-    type: String,
-    default: ''
-  },
-  fileName: {
-    type: String,
-    default: ''
-  },
-  fileSize: {
-    type: Number,
-    default: 0
-  },
-  fileMimeType: {
-    type: String,
-    default: ''
-  },
   replyTo: {
     type: Schema.Types.ObjectId,
     ref: 'Message',
